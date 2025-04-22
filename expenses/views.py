@@ -10,8 +10,8 @@ from django.contrib import messages
 from expenses import utils
 from expenses.utils import ExpenseGenerator
 
-from .forms import BudgetForm, ExpenseForm
-from .models import Budget, Expense
+from .forms import BudgetForm, ExpenseForm, ReceiptUploadForm
+from .models import Budget, Expense, ReceiptUpload, Notification
 
 # Create your views here.
 
@@ -436,10 +436,6 @@ def delete_testuser_data(request):
 
 # views.py
 
-from .models import Notification
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-
 @login_required
 def user_notifications(request):
     """View all user notifications with pagination"""
@@ -668,3 +664,71 @@ def export_data_file(request):
     # Default case - invalid format
     messages.error(request, 'Invalid export format')
     return redirect('expenses:export_data')
+
+@login_required
+def upload_receipt(request):
+    """
+    View for handling receipt uploads
+    """
+    if request.method == "POST":
+        form = ReceiptUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            receipt = form.save(commit=False)
+            receipt.owner = request.user
+            
+            # Save the receipt
+            receipt.save()
+            
+            # Create a notification about the successful upload
+            Notification.objects.create(
+                user=request.user,
+                title="Receipt Uploaded",
+                message="Your receipt has been successfully uploaded and is being processed."
+            )
+            
+            messages.success(request, "Receipt uploaded successfully!")
+            return redirect("expenses:receipt_list")
+    else:
+        form = ReceiptUploadForm()
+    
+    return render(request, "expenses/upload_receipt.html", {"form": form})
+
+@login_required
+def receipt_list(request):
+    """
+    View for displaying all receipts uploaded by the user
+    """
+    receipts = ReceiptUpload.objects.filter(owner=request.user).order_by('-uploaded_at')
+    return render(request, "expenses/receipt_list.html", {"receipts": receipts})
+
+@login_required
+def receipt_detail(request, receipt_id):
+    """
+    View for displaying details of a specific receipt
+    """
+    receipt = get_object_or_404(ReceiptUpload, id=receipt_id, owner=request.user)
+    return render(request, "expenses/receipt_detail.html", {"receipt": receipt})
+
+@login_required
+def delete_receipt(request, receipt_id):
+    """
+    View for deleting a receipt
+    """
+    receipt = get_object_or_404(ReceiptUpload, id=receipt_id, owner=request.user)
+    
+    if request.method == "POST":
+        # Delete the receipt
+        receipt.delete()
+        
+        # Create a notification about the deletion
+        Notification.objects.create(
+            user=request.user,
+            title="Receipt Deleted",
+            message=f"Receipt #{receipt_id} has been successfully deleted."
+        )
+        
+        messages.success(request, "Receipt deleted successfully!")
+        return redirect("expenses:receipt_list")
+    
+    # If method is GET, just show the receipt detail (never directly delete on GET)
+    return redirect("expenses:receipt_detail", receipt_id=receipt_id)

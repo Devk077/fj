@@ -54,4 +54,10 @@ urlpatterns = [
     # Export data URLs
     path("export-data/", views.export_data, name="export_data"),
     path("export-data/file/", views.export_data_file, name="export_data_file"),
+    
+    # Receipt URLs
+    path("receipts/upload/", views.upload_receipt, name="upload_receipt"),
+    path("receipts/", views.receipt_list, name="receipt_list"),
+    path("receipts/<int:receipt_id>/", views.receipt_detail, name="receipt_detail"),
+    path("receipts/<int:receipt_id>/delete/", views.delete_receipt, name="delete_receipt"),
 ]

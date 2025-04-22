@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Budget, Expense
+from .models import Budget, Expense, ReceiptUpload
 
 
 class ExpenseForm(forms.ModelForm):
@@ -25,3 +25,14 @@ class BudgetForm(forms.ModelForm):
         exclude = ["owner"]
 
         widgets = {"amount": forms.NumberInput(attrs={"class": "form-control"})}
+
+
+class ReceiptUploadForm(forms.ModelForm):
+    class Meta:
+        model = ReceiptUpload
+        fields = ["image"]
+        exclude = ["owner", "ocr_text"]
+
+        widgets = {
+            "image": forms.FileInput(attrs={"class": "form-control", "accept": "image/*"})
+        }

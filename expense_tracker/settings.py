@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'accounts',
     'expenses.apps.ExpensesConfig',
     'api',
+    'chatbot',
 ]
 
 CURRENCY = "INR"
